@@ -7,7 +7,7 @@ DVIPDF  = dvipdft
 XDVI	= xdvi -gamma 4
 GH		= gv
 
-EXAMPLES = $(wildcard *.c)
+EXAMPLES = $(wildcard *.h)
 SRC	:= $(shell egrep -l '^[^%]*\\begin\{document\}' *.tex)
 TRG	= $(SRC:%.tex=%.dvi)
 PSF	= $(SRC:%.tex=%.ps)
@@ -17,23 +17,17 @@ pdf: $(PDF)
 
 ps: $(PSF)
 
-$(TRG): %.dvi: %.tex $(EXAMPLES)
-	#one way of including source code is to use pygments
-	pygmentize -f latex -o __${EXAMPLES}.tex ${EXAMPLES}
-	#requires that you \include{pygments.tex} in your preamble
-
+$(TRG): %.dvi: %.tex *.bib $(EXAMPLES)
 	$(LATEX) $<
 	$(BIBTEX) $(<:%.tex=%)
 	$(LATEX) $<
 	$(LATEX) $<
-	#remove the pygmentized output to avoid cluttering up the directory
-	#rm __${SRC}.tex
-
 
 $(PSF):%.ps: %.dvi
 	$(DVIPS) -R -Poutline -t letter $< -o $@
 
 $(PDF): %.pdf: %.ps
+#	$(DVIPDF) -o $@ $<
 	ps2pdf $<
 
 show: $(TRG)
@@ -47,3 +41,4 @@ all: pdf
 clean:
 	rm -f *.pdf *.ps *.dvi *.out *.log *.aux *.bbl *.blg *.pyg
 
+.PHONY: all show clean ps pdf showps
