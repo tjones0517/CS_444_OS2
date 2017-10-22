@@ -56,7 +56,7 @@ void eat(){
 	sleep(eating);
 }
 
-void all_they_do_is_eat_and_think(int which_hand, int position){
+void *all_they_do_is_eat_and_think(int which_hand, int position){
      int x = 1;
      while(x==1){
 	think();
@@ -73,6 +73,13 @@ void all_they_do_is_eat_and_think(int which_hand, int position){
 int main(){
    
    pthread_t Locke, Socrates, Plato, Confucius, Descartes;
+   pthread_create(&Locke, NULL, all_they_do_is_eat_and_think(0,0));
 
+   pthread_create(&Socrates, NULL, all_they_do_is_eat_and_think(1,1));
+   pthread_create(&Plato, NULL, all_they_do_is_eat_and_think(2,1));
+   pthread_create(&Confucius, NULL, all_they_do_is_eat_and_think(3,1));
+   pthread_create(&Descartes, NULL, all_they_do_is_eat_and_think(4,1));
+
+   pthread_join(&Locke);
   return 0;
 }
