@@ -9,6 +9,8 @@
 
 using namespace std;
 
+srand(time(NULL));
+
 sem_t f1,f2,f3,f4,f5;
 
 sem_init(&f1,0,1);
@@ -42,16 +44,33 @@ void put_forks(i){
    forks[left(i)].signal();
 }
 
-void all_they_do_is_eat_and_think(){
-	int x = 1;
+void think(){
+	int thinking = 	rand() % 20 + 1;
+	sprintf("Thinking for %d seconds...", &thinking);
+	sleep(thinking);
+}
+
+void eat(){
+	int eating = rand() % 9 + 2;
+	sprintf("Eating for %d seconds...", &eating);
+	sleep(eating);
+}
+
+void all_they_do_is_eat_and_think(int which_hand, int position){
+     int x = 1;
      while(x==1){
-	
+	think();
+        if(which_hand==0)
+	   get_forks_lefty(position);	   
+	else
+	   get_forks_righty(position);
+	eat();
+	put_forks();
      }	
 }
 
 
 int main(){
-  srand(time(NULL));
    
    pthread_t Locke, Socrates, Plato, Confucius, Descartes;
 
