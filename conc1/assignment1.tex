@@ -1,0 +1,173 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Assignment 1 - Write-Up}
+%\author{Tyler Jones & Tair Maimon}
+%\date{October 9th 2017}
+
+\begin{document}
+
+\maketitle
+
+\author{Tyler Jones (jonesty) \& Tair Maimon (maimonc)}
+\newline
+
+
+\newpage
+\section{Kernel}
+
+\subsection {Setting up the kernel}
+\begin{itemize}
+\item Part 1:
+\begin{itemize}
+\item Open two putty sessions, connect to os2 with ssh username@os2.engr.oregonstate.edu
+\item In screen 1:
+\begin{itemize}
+
+\item Create a folder with group number as the name, in /scratch/fall2017/???
+\item Run the script /scratch/bin/"acl\_open" to change the permissions of the repo
+\item Export the kernel from the git repository: git://git.yoctoproject.org/linux-yocto-3.19 (add actual command)
+\item In the linux-yocto-3.19 folder in your repo run the command: git checkout ‘v3.19.2’ to get the right version
+\item Source the environment configuration script with the command: source /scratch/opt/environment-setup-i586-poky-linux (for the bash shell)
+\item Run the commend to run qemu: qemu-system-i386 -gdb tcp::5531 -S -nographic -kernel bzImage-qemux86.bin -drive file=core-image-lsb-sdk-qemux86.ext4,if=virtio -enable-kvm -net none -usb -localtime --no-reboot --append "root=/dev/vda rw console=ttyS0 debug".
+\end{itemize}
+
+
+\item In screen 2:
+\begin{itemize}
+
+\item Source the environment configuration script with the command: source /scratch/opt/environment-setup-i586-poky-linux (for the bash shell)
+\item Run the command: \$GDB.
+\item In the line for gdb() run: target remote : 5531
+\item In the line for gdb() run: continue
+\item Go back to screen 1
+\item In screen 1: 
+\item Enter:  root for login
+\item you’re in the kernel
+\item Can run: uname -a to see what’s the name of the kernel.
+\item Run: reboot, to exit kernel
+\end{itemize}
+\end{itemize}
+
+\item Part 2:
+\begin{itemize}
+\item In screen 1:
+\begin{itemize}
+\item copy /scratch/fall2017/files/config-3.19.2-yocto-qemu to \$SRC\_ROOT/.config
+\item In the linux-yocto-3.19 folder in your repo, run: make menuconfig. Go to General setup, local version and change the name variable
+\item In the linux-yocto-3.19 folder in your repo there is a make file
+\item Run: make -j4 all. This creates a kernel image. It will take a few minutes
+\item After that, check you have a file bzimage in arch/x86/boot 
+\item Go back to the linux-yocto-3.19 folder in your repo and run: source /scratch/opt/environment-setup-i586-poky-linux (for the bash shell)
+\item Run the commend to run qemu: qemu-system-i386 -gdb tcp::5531 -S -nographic -kernel arch/x86/boot/bzImage -drive file=core-image-lsb-sdk-qemux86.ext4,if=virtio -enable-kvm -net none -usb -localtime --no-reboot --append "root=/dev/vda rw console=ttyS0 debug". Make sure to change the -kernel option to the new image
+\end{itemize}
+\item In screen 2
+\begin{itemize}
+\item Source the environment configuration script with the command: source /scratch/opt/environment-setup-i586-poky-linux (for the bash shell) (if you didn’t close the window from part 1, skip a and b)
+\item Run the command: \$GDB.
+\item In the line for gdb() run: target remote : 5531
+\item In the next line for gdb() run: continue
+\item Go back to screen 1
+\end{itemize}
+\item In screen 1
+\begin{itemize}
+\item Enter root
+\item Run: uname -a 
+\item Make sure your name is the name -31-hw shows after the location
+\item Run reboot to exit.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+\subsection{qemu-system-i386 Options Explanations}
+\begin{itemize}
+\item \textbf{gdb tcp::5531}  wait for gdb connection on the port 5531
+\item \textbf{S} freeze CPU at startup 
+\item \textbf{nographic} disable graphical output and redirect serial I/Os to console
+\item \textbf{kernel bzImage-qemux86.bin} specify kernel image
+\item \textbf{drive file=core-image-lsb-sdk-qemux86.ext4,if=virtio}  defines a new drive. There are a few options that are valid
+\item \textbf{enable-kvm} enable KVM full virtualization support
+\item \textbf{net none} use it alone to have zero network devices
+\item \textbf{usb} enable the USB driver 
+\item \textbf{localtime} set the clock to local time. The default is UTC time
+\item \textbf{--no-reboot} exit instead of rebooting
+\item \textbf{--append "root=/dev/vda rw console=ttyS0 debug"}. use 'cmdline' as kernel command line
+\end{itemize}
+
+\section{Concurrency: Producer-Consumer Problem}
+\subsection{What's the point?}
+
+The main point of this assignment is to demonstrate the effective use of parallel processing on a shared resource. Parallel programming is an extremely effective tool, and the producer- consumer problem is a very common problem that requires it’s use.
+
+\subsection{How did we approach the problem?}
+
+We approached the problem as viewing the producer and consumer as the two separate processes. Essentially, our main function would create one type of thread that calls a producer function, while the other creates another type of thread that calls a consumer function. Within both of these threads there needed to be some way to control exclusive access to the shared resource - the buffer. Essentially, we needed to implement a way that blocks the consumer/producer while the other is performing an operation on it. If we hadn’t done this, then if the consumer and producer are reading at the same time, or if the producer creates an item when the buffer is full, or the consumer tries to consume an event when the buffer is empty, there would have been an abundance of errors.
+
+\subsection{Algorithm}
+
+Our algorithm for this problem was to make one mutex which would block access to the buffer, and two semaphores which would be used to make sure the producer and consumer do not make or consume an event when the buffer is either full or empty. The algorithm (written in pseudocode) was as follows: 
+
+
+\textbf{Consumer:}
+\begin{itemize}
+\item Decrement \# of items sem. \textit{//checking for empty buffer}
+\item Lock mutex
+\item Consume buffer event
+\item Unlock mutex
+\item Increment \# of spaces sem.
+\end{itemize}
+
+
+\textbf{Producer:}
+\begin{itemize}
+\item Decrement \# of spaces sem. \textit{//checking for full buffer}
+\item Lock mutex
+\item Produce event
+\item Add event to Buffer
+\item Unlock mutex
+\item Increment \# of items sem.
+\end{itemize}
+
+\subsection{How did we ensure our solution was valid?}
+We ensured that our solution was correct by first starting with one producer and one consumer. We also reduced the size of the buffer from size(32) to size(5) for testing simplicity. Essentially there were 3 main tests that we needed to perform:
+\begin{itemize}
+\item When the buffer is full, producer doesn’t create a new item until the consumer creates an empty space
+\item When the buffer is empty, the consumer doesn’t try to consume an item until the producer creates an item.
+\item The producer and consumer never act on the buffer at the same time
+\end{itemize}
+
+We were able to manipulate the threads to create each of the situations above. The first and second cases were tested by forcing the wait time of the producer or consumer to be shorter than the other depending on the case. This either caused the consumer to “try” to consume an event on an empty buffer because it always acted faster than the producer, or caused the producer to try to produce an event on a full buffer because it always acted faster than the consumer. The third test case was implicitly tested and passed by observing the output of all of our other tests and clearly they never acted simultaneously due to the mutex locking and unlocking.
+
+After we ensured the above passed with one thread of each type, we created multiple threads of both types and performed the same tests once more, each one passing.
+
+\subsection{What did we learn?}
+
+We learned a lot about p\_threads and semaphores through this project. We learned firstly that they are not difficult to implement, even in a relatively difficult to debug language like C. Secondly, we learned that without the function p\_thread\_join function, the main program will actually terminate even though it creates the subprocesses/threads properly. In order to get the program to run infinitely, we found that making each spawned thread exist in an infinite while loop, and then forcing our main function to wait for them to join was the best/intended solution. Without join, main would just terminate practically instantly. Thirdly, we learned that semaphores are a tool to make threads work with one another. Before this project, we had the misconception that semaphores were what allowed parallel programming to work, but this was proved incorrect. Semaphores were what allowed us to track the properties of buffer\_size easily, while our mutex allowed the desired exclusive access. P\_threads were the actual construct that made our implemetation of the parallel programming possible.
+
+\section{Version Control \& Work Logs}
+
+\subsection{Version Control Log}
+\begin{tabular}{ |l|l| }
+  \hline
+  \multicolumn{2}{|c|}{Version Control Log} \\
+  \hline
+  10/2 @ 11 am & Pseudocode for producer/consumer. Implemented buffer and buffer\_item struct. \\
+  10/2 @ 2 pm & Implemented mutex/semaphores in p/c. Set-up p\_threads in main(). \\
+  10/4 @ 6 pm & Implemented Mersenne Twister + wait times within threads. \\
+  10/6 @ 7pm & Implemented rdrand conditional w/ Mersenne Twister. \\
+  10/8 @ 2 pm & Implemented multiple consumers + producers. Added p\_thread\_join()\\
+  10/8 @ 1 am & Implemented command line args to handle any number of p/c. \\
+  \hline
+\end{tabular}
+
+\subsection{Work Log}
+Similar to the concurrency assignment requirement, we did the two portions of Assignment 1 in parallel. We met up a handful of times over the course of the last 2 weeks to work on the assignment together. Ultimately, Tair ended up focusing more on the Kernel portion when we were not together working, and Tyler focused more on the concurrency portion. 
+
+The concurrency portion was built in stages. The most important part of the assignment was understanding the problem statement. The pseudocode and algorithm were discussed and implemented first. From there, we implemented the buffer and the struct that the buffer would hold. These both happened very early on and our future build just added the necessary features based on the assignment specifications. The randomness implementation was actually one of the more difficult portions of this assignment. Implementing rdrand and Mersenne twister were both their own challenges. Mersenne twister was the easier of the two and was thus implemented first. Rdrand was one of the final features of the program that we implemented, along with the arguments to handle multiple threads of consumers and producers at the same time.
+
+
+
+
+
+
+\end{document}
