@@ -30,29 +30,44 @@ void put_forks(int i){
    sem_post(&forks[left(i)]);
 }
 
-void think(int who){
+void think(char* name){
 	int thinking = 	rand() % 20 + 1;
-	printf("%d: Thinking for %d seconds...\n", who, thinking);
-	sleep(3);
+	printf("%s: Thinking for %d seconds...\n", name, thinking);
+	sleep(thinking);
 }
 
-void eat(int who){
+void eat(char* name){
 	int eating = rand() % 9 + 2;
-	printf("%d: Eating for %d seconds...\n", who, eating);
+	printf("%s: Eating for %d seconds...\n", name, eating);
 	sleep(eating);
 }
 
 void *all_they_do_is_eat_and_think(void *position){
      int x = 1;
+     char* name;
+     if(position==0){
+	name = "Locke";
+     }
+     if(position==1){
+        name = "Socrates";
+     }
+     if(position==2){
+        name = "Plato";
+     }
+     if(position==3){
+        name = "Confucius";
+     }
+     if(position==4){
+        name = "Descartes";
+     }	
      while(x==1){
-	think(position);
+	think(name);
         if(position==0){
 	   get_forks_lefty(position);
-           printf("lefty position\n");
 	}	   
 	else
 	   get_forks_righty(position);
-	eat(position);
+	eat(name);
 	put_forks(position);
      }	
 }
@@ -86,6 +101,6 @@ int main(){
 
    pthread_join(&Locke, NULL);
 
-   sleep(100000000);
+  
   return 0;
 }
