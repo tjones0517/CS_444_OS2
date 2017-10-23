@@ -17,17 +17,23 @@ int right(i){
 
 void get_forks_lefty(int i){
    sem_wait(&forks[left(i)]);
+   printf("Fork %d: PICKED UP\n", left(i));
    sem_wait(&forks[right(i)]);
+   printf("Fork %d: PICKED UP\n", right(i));
 }
 
 void get_forks_righty(int i){
    sem_wait(&forks[right(i)]);
+   printf("Fork %d: PICKED UP\n", right(i));
    sem_wait(&forks[left(i)]);
+   printf("Fork %d: PICKED UP\n", left(i));
 }
 
 void put_forks(int i){
    sem_post(&forks[right(i)]);
+   printf("Fork %d: READY FOR USE\n", right(i));
    sem_post(&forks[left(i)]);
+   printf("Fork %d: READY FOR USE\n", left(i));
 }
 
 void think(char* name){
@@ -99,7 +105,11 @@ int main(){
    pthread_create(&Confucius, NULL, all_they_do_is_eat_and_think, (void*)3);
    pthread_create(&Descartes, NULL, all_they_do_is_eat_and_think, (void*)4);
 
-   pthread_join(&Locke, NULL);
+   pthread_join(Locke, NULL);
+   pthread_join(Socrates, NULL);
+   pthread_join(Plato, NULL);
+   pthread_join(Confucius, NULL);
+   pthread_join(Descartes, NULL);
 
   
   return 0;
