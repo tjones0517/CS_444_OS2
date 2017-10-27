@@ -37,14 +37,26 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 	struct sstf_data *nd = q->elevator->elevator_data;
 
 	struct list_head *iterator = NULL; //set up an iterator
+	struct list_head *printer = NULL;
 
+	if(!list_empty(&nd->queue)){
 	list_for_each(iterator, &nd->queue){
 		struct request *temp = list_entry(iterator, struct request, queuelist);
-		if(rq_end_sector(rq)>rq_end_sector(temp))//We want the list to be ordered
-		   list_add(&rq->queuelist, &temp->queuelist);//add the element in the location immediately after the first value it is larger than
+		if(blk_rq_pos(rq)<blk_rq_pos(temp)){//We want the list to be ordered
+		   list_add(&rq->queuelist, &temp->queuelist.prev);//add the element in the location immediately after the first value it is larger than
+		   break;
+		}
+	}
+	}
+	else{
+	list_add_tail(&rq->queuelist, &nd->queue);
 	}
 
-	list_add_tail(&rq->queuelist, &nd->queue);
+	printk("REQUEST QUEUE: ");
+	list_for_each(printer,&nd->queue){
+	   struct request *printed=list_entry(printer, struct request, queuelist);
+	   printk(" %llu", blk_rq_pos(printed));
+	}
 }
 
 static struct request *
