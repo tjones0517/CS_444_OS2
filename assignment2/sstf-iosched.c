@@ -39,23 +39,40 @@ static void sstf_add_request(struct request_queue *q, struct request *rq)
 	struct list_head *iterator = NULL; //set up an iterator
 	struct list_head *printer = NULL;
 
+	int i=0;
+
 	if(!list_empty(&nd->queue)){
-	list_for_each(iterator, &nd->queue){
-		struct request *temp = list_entry(iterator, struct request, queuelist);
-		if(blk_rq_pos(rq)<blk_rq_pos(temp)){//We want the list to be ordered
-		   list_add(&rq->queuelist, &temp->queuelist.prev);//add the element in the location immediately after the first value it is larger than
-		   break;
+		struct request *previous = list_entry(nd->queue.prev, struct request, queuelist);
+		/*list_for_each(iterator, &nd->queue){
+			struct request *temp = list_entry(iterator, struct request, queuelist);
+			previous = list_entry(previous->queuelist.prev, struct request, queuelist);
+			i = i + 1;
+			if(blk_rq_pos(rq)<blk_rq_pos(temp)){//We want the list to be ordered
+		   		list_add(&rq->queuelist, &previous->queuelist);//add the element in the location immediately  before the first value it is larger than
+		   		printk("ADDING REQUEST TO POSITION %d IN QUEUE\n", i);
+		   		break;
+			}
+			if(temp->queuelist.next == &nd->queue){
+			   	list_add_tail(&rq->queuelist, &nd->queue);	
+				printk("ADDED REQUEST TO END OF QUEUE");
+				
+			}
+		}*/ /*THIS WAS A FIRST ATTEMPT AT THE ALGO IT CAN BE SIMPLIFIED GREATLY WITH THE TWO LINES BELOW"*/
+		while(blk_rq_pos(rq) < blk_rq_pos(previous)){
+		   	previous = list_entry(previous->queuelist.prev, struct request, queuelist);
 		}
+		list_add(&rq->queuelist, &previous->queuelist);
+			
 	}
-	}
-	else{
-	list_add_tail(&rq->queuelist, &nd->queue);
+	if(list_empty(&nd->queue)){
+		printk("EMPTY LIST... ADDING TO TAIL AS DEFAULT\n");
+		list_add(&rq->queuelist, &nd->queue);
 	}
 
 	printk("REQUEST QUEUE: ");
 	list_for_each(printer,&nd->queue){
 	   struct request *printed=list_entry(printer, struct request, queuelist);
-	   printk(" %llu", blk_rq_pos(printed));
+	   printk(" %llu\n", blk_rq_pos(printed));
 	}
 }
 
