@@ -6,9 +6,9 @@ In order to get it into the VM, you must scp it in from the host.
 
 To scp the .ko (module) into the host, you must run the following qemu command:
 
-qemu-system-386 -gdb tcp::5531 -S -nographic -kernel linux-yocto-3.19/arch/x86/boot/bzImage -drive file=core-image-lsb-sdk-qemux86.ext4 -enable-kvm -usb -localtime --no-reboot --append "root=/dev/hda rw console=ttys0 debug" -redir tcp:3122:22
+qemu-system-386 -gdb tcp::5531 -S -nographic -kernel linux-yocto-3.19/arch/x86/boot/bzImage -drive file=core-image-lsb-sdk-qemux86.ext4 -enable-kvm -usb -localtime --no-reboot --append "root=/dev/hda rw console=ttys0 debug" -redir tcp:3122::22
 
-Note that the -redir flag was added with a new tcp port 3122 to redirect to 22 to allow the scp of the file. Once in the vm, from the host type the following scp command.
+Note that the -redir flag was added with a new tcp port 3122 to redirect to 22 to allow the scp of the file. Once in the vm, from the host type the following scp command. Note also that -net none was removed from the qemu command, as this, by nature, stops any networking properties within the vm. Thanks Kevin!
 
 $ scp -P 3122 tjmc_a3.ko root@localhost:/home/root
 
