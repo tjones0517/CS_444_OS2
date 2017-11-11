@@ -18,6 +18,8 @@
 #include <linux/genhd.h>
 #include <linux/blkdev.h>
 #include <linux/hdreg.h>
+#include <linux/crypto.h>
+#include <linux/scatterlist.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
 static char *Version = "1.4";
@@ -82,7 +84,7 @@ static void sbd_request(struct request_queue *q) {
 			continue;
 		}
 		sbd_transfer(&Device, blk_rq_pos(req), blk_rq_cur_sectors(req),
-				req->buffer, rq_data_dir(req));
+				bio_data(req->bio), rq_data_dir(req));
 		if ( ! __blk_end_request_cur(req, 0) ) {
 			req = blk_fetch_request(q);
 		}
