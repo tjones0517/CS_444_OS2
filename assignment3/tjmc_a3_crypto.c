@@ -43,7 +43,7 @@ module_param(nsectors, int, 0);
 static struct request_queue *Queue;
 
 //struct for crypto 
-static inline struct cipher_handle;
+static struct crypto_cipher *cipher_handle;
 /*
  * The internal representation of our device.
  */
@@ -54,6 +54,56 @@ static struct sbd_device {
 	struct gendisk *gd;
 } Device;
 
+struct tcrypt_result{
+   struct completion completion;
+   int err;
+};
+
+struct skcipher_def{
+   struct scatterlist sg;
+   struct crypto_skcipher *tfm;
+   struct skcipher_request *req;
+   struct tcrypt_result result;
+};
+
+static void test_skcipher_cb(struct crypto_async_request *req, int error){
+   struct tcrypt_result *result = req->data;
+
+   if(error == -EINPROGRESS)
+      return;
+   result->err = error;
+   complete(&result->completion);
+   pr_info("Encryption finished successfully\n");
+}
+
+static unsigned int test_skcipher_encdec(struct skcipher_def *sk, int enc){
+   int rc = 0;
+
+   if(enc)
+      rc = crypto_skcipher_encrypt(sk->req);
+   else
+      rc = crypto_skcipher_decrypt(sk->req);
+   switch(rc){
+      case 0:
+	 break;
+      case -EINPROGRESS:
+      case -EBUSY:
+	 rc = wait_for_completion_interruptible(
+	       &sk->result.completion);
+	 if(!rc && !sk->result.err){
+	    reinit_completion(&sk->result.completion);
+	    break;
+   	 }
+      default:
+	 pr_info("skcipher encrypt returned with %d result %d\n", rc, sk->result.err);
+	 break;
+   }
+   init_completion(&sk->result.completion);
+
+   return rc;
+
+}
+
 /*
  * Handle an I/O request.
  */
@@ -61,15 +111,15 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		unsigned long nsect, char *buffer, int write) {
 	unsigned long offset = sector * logical_block_size;
 	unsigned long nbytes = nsect * logical_block_size;
-	unsigned char key[32];
+	unsigned char key[32] = "key_try";
 	int i;
 
 	//setting the key for the cipher
-	get_random_bytes(&key, 32);
+	//get_random_bytes(&key, 32);
 	if(crypto_cipher_setkey(cipher_handle, key, 32)){
 	   pr_info("error when trying to set key\n");
 	   printk("error setting key\n");
-	   goto out;
+	   return;
 
 	}
 
@@ -83,9 +133,7 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		crypto_cipher_encrypt_one(cipher_handle,dev->data+offset+i, buffer+i);//encrypting one block at a time
 
 		printk("without: \n");
-		data_view(dev->data+offset, nbytes);
 		printk("with: \n");
-		data_view(buffer, nbytes);
 
 		}
 	}
@@ -97,12 +145,10 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		}
 
 		printk("without: \n");
-		data_view(buffer, nbytes);
 		printk("with: \n");
-		data_view(dev->data+offset, nbytes);
 
-		}
 	}
+	
 }	
 
 static void sbd_request(struct request_queue *q) {
