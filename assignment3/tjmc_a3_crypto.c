@@ -132,8 +132,6 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		for(i = 0; i < nbytes ; i+= crypto_cipher_blocksize(cipher_handle) ){
 		crypto_cipher_encrypt_one(cipher_handle,dev->data+offset+i, buffer+i);//encrypting one block at a time
 
-		printk("without: \n");
-		printk("with: \n");
 
 		}
 	}
@@ -144,8 +142,6 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		   crypto_cipher_decrypt_one(cipher_handle, buffer+i, dev->data + offset +i);
 		}
 
-		printk("without: \n");
-		printk("with: \n");
 
 	}
 	
