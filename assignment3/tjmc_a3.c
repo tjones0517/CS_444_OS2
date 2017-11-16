@@ -42,6 +42,8 @@ module_param(nsectors, int, 0);
  */
 static struct request_queue *Queue;
 
+//struct for crypto 
+static inline struct cipher_handle;
 /*
  * The internal representation of our device.
  */
@@ -59,16 +61,49 @@ static void sbd_transfer(struct sbd_device *dev, sector_t sector,
 		unsigned long nsect, char *buffer, int write) {
 	unsigned long offset = sector * logical_block_size;
 	unsigned long nbytes = nsect * logical_block_size;
+	unsigned char key[32];
+	int i;
+
+	//setting the key for the cipher
+	get_random_bytes(&key, 32);
+	if(crypto_cipher_setkey(cipher_handle, key, 32)){
+	   pr_info("error when trying to set key\n");
+	   printk("error setting key\n");
+	   goto out;
+
+	}
 
 	if ((offset + nbytes) > dev->size) {
 		printk (KERN_NOTICE "sbd: Beyond-end write (%ld %ld)\n", offset, nbytes);
 		return;
 	}
-	if (write)
-		memcpy(dev->data + offset, buffer, nbytes);
-	else
-		memcpy(buffer, dev->data + offset, nbytes);
-}
+	if (write){
+	//	memcpy(dev->data + offset, buffer, nbytes);
+		for(i = 0; i < nbytes ; i+= crypto_cipher_blocksize(cipher_handle) ){
+		crypto_cipher_encrypt_one(cipher_handle,dev->data+offset+i, buffer+i);//encrypting one block at a time
+
+		printk("without: \n");
+		data_view(dev->data+offset, nbytes);
+		printk("with: \n");
+		data_view(buffer, nbytes);
+
+		}
+	}
+	else{
+		//memcpy(buffer, dev->data + offset, nbytes);
+		for(i = 0 ; i < nbytes ; i += crypto_cipher_blocksize(cipher_handle)){
+	
+		   crypto_cipher_decrypt_one(cipher_handle, buffer+i, dev->data + offset +i);
+		}
+
+		printk("without: \n");
+		data_view(buffer, nbytes);
+		printk("with: \n");
+		data_view(dev->data+offset, nbytes);
+
+		}
+	}
+}	
 
 static void sbd_request(struct request_queue *q) {
 	struct request *req;
@@ -123,6 +158,15 @@ static int __init sbd_init(void) {
 	Device.size = nsectors * logical_block_size;
 	spin_lock_init(&Device.lock);
 	Device.data = vmalloc(Device.size);
+	////////////////
+	cipher_handle = crypto_alloc_cipher("aes", 0, 0);
+	if(IS_ERR(cipher_handle)){
+	   pr_err("error allocating cipher handle\n");
+	   return PTR_ERR(cipher_handle);
+	   //do something?
+	}
+
+	////////////////
 	if (Device.data == NULL)
 		return -ENOMEM;
 	/*
@@ -171,6 +215,9 @@ static void __exit sbd_exit(void)
 	unregister_blkdev(major_num, "sbd");
 	blk_cleanup_queue(Queue);
 	vfree(Device.data);
+	if(cipher_handle){
+	   crypto_free_cipher(cipher_handle);
+	}
 }
 
 module_init(sbd_init);
