@@ -47,3 +47,22 @@ mutex.V();
 
 }
 
+int main(){
+   int i;
+   sem_t mutex, block;
+
+   sem_init(&mutex, 0, 3);
+   sem_init(&block, 0, 3);
+
+   for(i = 0 ; i < 6 ; i++ ){
+   pthread_create(&thread_id, &attr, check_3, (void*)i);
+   }
+
+   pthread_join(thread_id,NULL);
+
+
+
+
+
+}
+
