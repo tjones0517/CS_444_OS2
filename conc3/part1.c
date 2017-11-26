@@ -16,61 +16,101 @@ pthread_t pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8;
 int active = 0;
 int waiting = 0;
 bool wait = false;
+int value;
 
 int check_if_3(void *number){
 
-int n;
-int thread_num =  (int)number;
-sem_wait(&mutex);
+	while(1){
+		int n;
+		int thread_num = (int)number;
 
-printf("thread %d\n", thread_num);
+		sem_wait(&mutex);
+		sem_getvalue(&mutex, &value);
+		printf("thread %d, value %d \n", thread_num, value);
+		
+		if(wait){
+		   waiting += 1; 
+	//	   printf("thread %d is waiting \n", thread_num);
+		   sem_post(&mutex);
+		   sem_wait(&block);
+		}
 
-if(wait){
-   waiting += 1; 
-   sem_post(&mutex);
-   sem_wait(&block);
-   sem_wait(&mutex);
-   waiting -= 1;
-}
+		else {
+		   active +=1;
+		   printf("active: %d\n", active);
+		   printf("thread %d is ACTIVE\n", thread_num);
+		   if(active == 3){
+			  wait = true;
+		   }
+		   else {
+		      wait = false;
+		   }
+		   sem_post(&mutex);
+		  // waiting -= 1;
+		}
 
-active += 1;
+		//active += 1;
 
-if(active ==3){
-   wait = true;
-}
+//	printf("thread %d is ACTIVE\n", thread_num);
+		/*
+		if(active ==3){
+		   wait = true;
+		}
+		*/
+		sleep(3);
 
-sem_post(&mutex);
+	//	printf("thread %d is going to sleep\n", thread_num);
+		sem_wait(&mutex);
+		active -=1;
 
-sleep(10);
 
-sem_wait(&mutex);
-active -=1;
-if(!active){
-   if (waiting < 3){
-      n = waiting;
-   }
-   else{
-      n = 3;
-   }
-   while(n > 0){
-      sem_post(&block);
-      n -=1;
-   }
-   wait = false;
-}
-sem_post(&mutex);
+		//printf("thread %d is going to sleep\n", thread_num);
+	//	sleep(3);
 
+		   printf("active: %d\n", active);
+		if (active ==0){
+		//printf("thread %d is awake\n", thread_num);
+		//sem_wait(&mutex);
+		//active -=1;
+
+		   if (waiting < 3){
+			  n = waiting;
+		   }
+		   else{
+			  n = 3;
+		   }
+		   waiting -= n;
+		   active = n;
+
+		   while(n > 0){
+			  sem_post(&block);
+			  n -=1;
+			  printf("thread is leaving\n", thread_num);
+		   }
+		   if (active == 3){
+		   wait = true;
+		   }
+		   else {
+		      wait = false;
+		   }
+		}
+
+	//	printf("thread %d is LEAVING\n", thread_num);
+		sem_post(&mutex);
+	}
 }
 
 int main(void){
  //  sem_t mutex, block;
+ /*
    int active = 0;
    int waiting = 0;
    bool wait = false;
+*/
    int i;
 
-   sem_init(&mutex, 0,1);
-   sem_init(&block, 0, 0);
+   sem_init(&mutex, 0,3);
+   sem_init(&block, 0, 3);
 
    pthread_t pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8;
    pthread_create(&pt1, NULL, check_if_3, (void*)1);
@@ -95,23 +135,3 @@ return 0;
 
 
 }
-
-int main(){
-   int i;
-   sem_t mutex, block;
-
-   sem_init(&mutex, 0, 3);
-   sem_init(&block, 0, 3);
-
-   for(i = 0 ; i < 6 ; i++ ){
-   pthread_create(&thread_id, &attr, check_3, (void*)i);
-   }
-
-   pthread_join(thread_id,NULL);
-
-
-
-
-
-}
-
