@@ -26,11 +26,11 @@ int check_if_3(void *number){
 
 		sem_wait(&mutex);
 		sem_getvalue(&mutex, &value);
-		printf("thread %d, value %d \n", thread_num, value);
+		printf("thread %d\n", thread_num);
 		
 		if(wait){
 		   waiting += 1;
-		  sleep(2); 
+		   sleep(2); 
 		   printf("thread %d is waiting \n", thread_num);
 		   sem_post(&mutex);
 		   sem_wait(&block);
@@ -38,8 +38,8 @@ int check_if_3(void *number){
 
 		else {
 		   active +=1;
-		   printf("active in else: %d\n", active);
-		   printf("thread %d is ACTIVE\n", thread_num);
+		 // printf("active in else: %d\n", active);
+	//	   printf("thread %d is ACTIVE\n", thread_num);
 		   if(active == 3){
 			  wait = true;
 		   }
@@ -62,13 +62,15 @@ int check_if_3(void *number){
 
 	//	printf("thread %d is going to sleep\n", thread_num);
 		sem_wait(&mutex);
+		 printf("NUM OF ACTIVE  %d\n", active);
 		active -=1;
+	       	printf("thread %d is leaving\n", thread_num);
 
 
 		//printf("thread %d is going to sleep\n", thread_num);
 	//	sleep(3);
 
-		   printf("active: %d\n", active);
+	//	   printf("active after: %d\n", active);
 		if (active ==0){
 		//printf("thread %d is awake\n", thread_num);
 		//sem_wait(&mutex);
@@ -86,7 +88,7 @@ int check_if_3(void *number){
 		   while(n > 0){
 			  sem_post(&block);
 			  n -=1;
-			  printf("thread is leaving\n", thread_num);
+			 // printf("thread is leaving\n", thread_num);
 		   }
 		   if (active == 3){
 		   wait = true;
@@ -110,8 +112,8 @@ int main(void){
 */
    int i;
 
-   sem_init(&mutex, 0,3);
-   sem_init(&block, 0, 3);
+   sem_init(&mutex, 0,1);
+   sem_init(&block, 0, 4);
 
    pthread_t pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8;
    pthread_create(&pt1, NULL, check_if_3, (void*)1);
