@@ -26,7 +26,7 @@ int check_if_3(void *number){
 
 		sem_wait(&mutex);
 		sem_getvalue(&mutex, &value);
-		printf("thread %d\n", thread_num);
+	//	printf("thread %d\n", thread_num);
 		
 		if(wait){
 		   waiting += 1;
@@ -58,7 +58,7 @@ int check_if_3(void *number){
 		   wait = true;
 		}
 		*/
-		sleep(3);
+		sleep(thread num +2);
 
 	//	printf("thread %d is going to sleep\n", thread_num);
 		sem_wait(&mutex);
