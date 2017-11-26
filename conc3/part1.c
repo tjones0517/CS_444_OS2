@@ -29,15 +29,16 @@ int check_if_3(void *number){
 		printf("thread %d, value %d \n", thread_num, value);
 		
 		if(wait){
-		   waiting += 1; 
-	//	   printf("thread %d is waiting \n", thread_num);
+		   waiting += 1;
+		  sleep(2); 
+		   printf("thread %d is waiting \n", thread_num);
 		   sem_post(&mutex);
 		   sem_wait(&block);
 		}
 
 		else {
 		   active +=1;
-		   printf("active: %d\n", active);
+		   printf("active in else: %d\n", active);
 		   printf("thread %d is ACTIVE\n", thread_num);
 		   if(active == 3){
 			  wait = true;
