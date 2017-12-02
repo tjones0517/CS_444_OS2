@@ -1,0 +1,5 @@
+The algorithm we plan on using to implement our code is as follows:
+
+1) The current SLOB allocator uses a first-fit algorithm that creates a lot of fragmentation due to memory allocation occuring in the first available place, rather than the optimal space.
+
+2) Our best fit changes will instead parse memory for the closest size spot that we need to allocate, and instead allocate that memory, which will hopefully in turn create less fragmentation, but will likely be slower due to having to parse through memory to find the optimal location everytime it allocates.

@@ -1,0 +1,7 @@
+mm/slob.c
+arch/x86/syscalls/syscall_32.tbl
+arch/x86/syscalls/syscall_64.tbl
+include/linux/syscalls.h
+include/uapi/asm-generic/unistd.h
+kernel/sys_ni.c
+
